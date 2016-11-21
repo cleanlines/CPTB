@@ -4,8 +4,7 @@
 # Author: FS Hand
 from Base import Base
 from arcresthelper import securityhandlerhelper
-from arcrest.agol.services import FeatureLayer,FeatureService
-from arcrest.common.filters import GeometryFilter
+from arcrest.agol.services import FeatureLayer
 
 class AreaUpdateHelper(Base):
 
@@ -30,10 +29,11 @@ class AreaUpdateHelper(Base):
             if len(in_area_feats.features) > 0:
                 for in_feat in in_area_feats.features:
                     current_area = in_feat.get_value(self._config.areaupdate["updatefield"])
+                    print current_area," also ",k
                     if current_area is None:
                         in_feat.set_value(self._config.areaupdate["updatefield"],k)
                     applied_areas = current_area.split(",")
                     if k not in applied_areas: applied_areas += k
                     in_feat.set_value(self._config.areaupdate["updatefield"], ",".join(applied_areas))
 
-
+            #FIXME: this is only updating - not removing what could be incorrect values - ie if a bbq has shifted
