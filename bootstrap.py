@@ -1,0 +1,41 @@
+# Project: CPTB 
+# File: bootstrap.py
+# Created: 9/11/2016 4:16 PM
+# Author: FS Hand
+
+# we ahve 2 requirements
+# update data based on algorithms
+# create simple excel reports (needs xlsxwriter)
+
+
+# admin url /rest/admin/services/
+# pre req ArcREST 3.5.6
+# http://esri.github.io/ArcREST/arcrest.html
+# set the result type to standard so we can get 32000 results back
+
+# import imp
+# imp.load_source('PortalPy', 'c:/work/dropbox/work/development/cptb/portalpy/portalpy.py') # todo: pth file
+# from PortalPy import Portal
+import arcrest
+from arcresthelper import securityhandlerhelper
+from arcrest.agol.services import FeatureLayer,FeatureService
+import ConfigParser
+import os
+import sys
+import json
+import inspect
+from Config import Config
+from  arcresthelper.orgtools import orgtools
+
+from AssetUpdateHelper import AssetUpdateHelper
+
+def main():
+    AssetUpdateHelper().execute_update_process()
+
+if __name__ == "__main__":
+    # shelve the current runtime / date and check all records in the editor tracking
+    main()
+
+
+
+

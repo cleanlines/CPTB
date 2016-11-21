@@ -1,0 +1,44 @@
+{
+  "logging": {
+    "logtofile": "true",
+    "loglevel": "debug"
+  },
+  "agolconfig": {
+    "org_url": "https://cptb.maps.arcgis.com",
+    "username": "m.llewellyn",
+    "password": "cptb1234",
+    "security_type": "Portal"
+  },
+  "assetgroup": "90a105ec72ab4d3288d501a5aa712d50",
+  "assetgroupname": "Asset Automation",
+  "areaupdate": {
+    "areaservice": "https://services6.arcgis.com/sNkVulJvjhuLzi0I/ArcGIS/rest/services/Area_Name_Simple/FeatureServer/0",
+    "queryfield": "AreaName",
+    "updatefield": "Area"
+  },
+  "related_fields": {
+    "maintenance": {
+      "fieldlookups": {
+        "Scheduled_Maintenance_Date": "Next_Maintenance_Date",
+        "Scheduled_Maintenance_Descripti": "Next_Maintenance_Description"
+      },
+      "where": [
+        "Completed_Maintenance_Date",
+        null
+      ],
+      "select": "oldest",
+      "sortby": "Scheduled_Maintenance_Date"
+    },
+    "condition": {
+      "sortby": "Condition_Report_Date",
+      "select": "newest",
+      "fieldlookups": {
+        "Condition_Report_Date": "Latest_Condition_Date",
+        "Condition_Report_Grade": "Latest_Condition_Grade",
+        "Condition_Report_Description": "Latest_Condition_Description",
+        "Annual_Risk_Of_Harm": "annual_risk_of_harm",
+        "Probability_Of_Failure": "probability_of_failure"
+      }
+    }
+  }
+}
