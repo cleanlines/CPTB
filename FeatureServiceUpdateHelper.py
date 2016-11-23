@@ -5,7 +5,6 @@
 from AbstractUpdateHelper import AbstractUpdateHelper
 from arcresthelper import securityhandlerhelper
 from arcrest.agol.services import FeatureService
-from Base import Base
 from Decorator import Decorator
 from AreaUpdateHelper import AreaUpdateHelper
 
@@ -16,17 +15,18 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
         self._json_object = json_object
         print self._config.log
 
-
     @Decorator.function_timer
     def update_features(self):
-        print self._json_object
-        # go through each layer and do the workflow
+        #print self._json_object
         token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
         fs = FeatureService(url=self._json_object["url"], securityHandler=token.securityhandler, initialize=True)
-
         for layer in fs.layers:
+            self._config.log.do_message('LAYER:'+layer.name,"debug")
             self.process_features(layer)
             self.update_features_for_area(layer)
+        for table in fs.tables:
+            self._config.log.do_message('TABLE:'+table.name,"debug")
+            self.process_features(table)
 
     @Decorator.function_timer
     def process_features(self,layer): #TODO: fix me!!
@@ -34,13 +34,12 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
         features = layer.query(out_fields=fields,resultType='standard') # we are here sorting out the field
         # print [feat.get_value("OBJECTID") for feat in features.features]
         feat_ids = ",".join([str(feat.get_value("OBJECTID")) for feat in features.features])
-        print feat_ids
+        #print feat_ids
         some_updates = {}
-        [some_updates[k].update(v) if k in some_updates else some_updates.update({k:v}) for w in [self.get_related_records(layer.query_related_records(feat_ids,r["id"])) for r in layer.relationships] for k,v in w.items()]
-        print some_updates
+        # note we only want to process origin relationships (otherwise we end up doing backwards ones - wont find anything but still
+        [some_updates[k].update(v) if k in some_updates else some_updates.update({k:v}) for w in [self.get_related_records(layer.query_related_records(feat_ids,r["id"]),r["id"]) for r in layer.relationships if r["role"] == 'esriRelRoleOrigin'] for k,v in w.items()]
+        #print some_updates
         some_feats = filter(lambda feat:feat.get_value('OBJECTID') in some_updates.keys(), features.features)
-        print some_feats
-
         for feat in some_feats:
             try:
                 for k,v in some_updates[feat.get_value('OBJECTID')].items():
@@ -53,7 +52,8 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
             self._config.log.do_message(e.message, "error")
 
     @Decorator.function_timer
-    def get_related_records(self,list):
+    def get_related_records(self,list,relationship_id):
+        #print relationship_id
         updates = {}
         if "relatedRecordGroups" in list:
             if len(list["relatedRecordGroups"]) > 0:
@@ -75,7 +75,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
             for updatekey in self._config.related_fields.keys():
                 if "sortby" in self._config.related_fields[updatekey]:
                     try:
-                        print len(group["relatedRecords"])
+                        #print len(group["relatedRecords"])
                         sorted_items = sorted(group["relatedRecords"],key=lambda relrec: relrec["attributes"][self._config.related_fields[updatekey]["sortby"]])
                         # if self._config.related_fields[updatekey]["sortby"] == "newest":
                         #     item = sorted_items[0]
@@ -99,7 +99,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
                                     item["attributes"][fl] = None
 
                         for k,v in item["attributes"].items():
-                            print k,v
+                            #print k,v
                             if k in self._config.related_fields[updatekey]["fieldlookups"].keys():
                                 if k.upper() in skips: continue
                                 obj[self._config.related_fields[updatekey]["fieldlookups"][k]] = v
@@ -108,7 +108,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
                         else:
                             del result[group["objectId"]]
                     except KeyError as ke:
-                        self._config.log.do_message(e.message + "key not on this related table - skip", "info")
+                        self._config.log.do_message(ke.message + "key not on this related table - skip", "info")
                     except Exception as e:
                         self._config.log.do_message(e.message,"error")
             return result

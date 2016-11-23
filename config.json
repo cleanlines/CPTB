@@ -9,6 +9,7 @@
     "password": "cptb1234",
     "security_type": "Portal"
   },
+  "esrifinishcodes":["esriJobSucceeded", "esriJobFailed", "esriJobTimedOut", "esriJobCancelled", "esriJobDeleted"],
   "assetgroup": "90a105ec72ab4d3288d501a5aa712d50",
   "assetgroupname": "Asset Automation",
   "areaupdate": {
