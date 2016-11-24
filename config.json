@@ -41,5 +41,11 @@
         "Probability_Of_Failure": "probability_of_failure"
       }
     }
+  },
+  "valuation_field_lookups":{
+    "installdate":"Installation_Date",
+    "installcost":"Installation_Cost",
+    "renewaldate":"Estimated_Renewal_Date",
+    "currentvalue":"Current_Value"
   }
 }

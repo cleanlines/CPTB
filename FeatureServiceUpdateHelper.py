@@ -7,6 +7,7 @@ from arcresthelper import securityhandlerhelper
 from arcrest.agol.services import FeatureService
 from Decorator import Decorator
 from AreaUpdateHelper import AreaUpdateHelper
+from Utility import Utility
 
 class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
 
@@ -23,14 +24,14 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
         for layer in fs.layers:
             self._config.log.do_message('LAYER:'+layer.name,"debug")
             self.process_features(layer)
-            self.update_features_for_area(layer)
+            #self.update_features_for_area(layer)
         for table in fs.tables:
             self._config.log.do_message('TABLE:'+table.name,"debug")
-            self.process_features(table)
+            #self.process_features(table)
 
     @Decorator.function_timer
     def process_features(self,layer): #TODO: fix me!!
-        fields = 'OBJECTID,'+",".join(self._config.related_fields["condition"]["fieldlookups"].values())+","+",".join(self._config.related_fields["maintenance"]["fieldlookups"].values())
+        fields = 'OBJECTID,'+",".join(self._config.related_fields["condition"]["fieldlookups"].values())+","+",".join(self._config.related_fields["maintenance"]["fieldlookups"].values() ) +","+",".join(self._config.valuation_field_lookups.values())
         features = layer.query(out_fields=fields,resultType='standard') # we are here sorting out the field
         # print [feat.get_value("OBJECTID") for feat in features.features]
         feat_ids = ",".join([str(feat.get_value("OBJECTID")) for feat in features.features])
@@ -46,10 +47,42 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
                     feat.set_value(k,v)
             except Exception as e:
                 self._config.log.do_message(e.message, "error")
+
         try:
-            layer.updateFeature(features=some_feats) #can we do a map??
+            layer.updateFeature(features=some_feats)
+            if self._update_current_value(features):
+                layer.updateFeature(features=features)
+
         except Exception as e:
             self._config.log.do_message(e.message, "error")
+
+    @Decorator.method_call_log
+    @Decorator.function_timer
+    def _update_current_value(self,features):
+        if len(features.features) == 0: return False
+        for v in self._config.valuation_field_lookups.values():
+             if v not in features.features[0].fields:
+                 return False
+
+        return_val = False
+        for f in features.features:
+            # this is well known stuff - we need the following bits of info
+            d1 = f.get_value(self._config.valuation_field_lookups["installdate"])
+            c1 = f.get_value(self._config.valuation_field_lookups["installcost"])
+            d2 = f.get_value(self._config.valuation_field_lookups["renewaldate"])
+            # set this
+            if not d1 or not d2 or not c1:
+                continue
+            # the dates should be milliseconds
+            print d1, d2, c1
+            now = Utility.current_milli_time()
+            full_period = d2 - d1
+            time_left = d2-now
+            current_cost = round(float(c1) * float(float(time_left) / float(full_period)),0)
+            if current_cost < 0: current_cost = 0
+            f.set_value(self._config.valuation_field_lookups["currentvalue"],current_cost)
+            return_val = True
+        return return_val
 
     @Decorator.function_timer
     def get_related_records(self,list,relationship_id):

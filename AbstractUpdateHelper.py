@@ -12,3 +12,6 @@ class AbstractUpdateHelper(object):
     def update_features(self):
         raise NotImplementedError()
 
+    @abstractmethod
+    def get_related_records(self,recs,relationship_id):
+        raise NotImplementedError()

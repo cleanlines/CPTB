@@ -72,7 +72,7 @@ class Config(Borg):
     #         self.log.close_log()
 
     def config_has_attribute(self,atts=[],obj=None):
-        if atts == []:
+        if not atts:
             return True
         obj = self if not obj else obj
         for an_att in atts:
