@@ -15,13 +15,11 @@
 
 from AssetUpdateHelper import AssetUpdateHelper
 
+
 def main():
     AssetUpdateHelper().execute_update_process()
+
 
 if __name__ == "__main__":
     # shelve the current runtime / date and check all records in the editor tracking
     main()
-
-
-
-

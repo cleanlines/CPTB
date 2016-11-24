@@ -1,5 +1,6 @@
 import pprint
 
+
 class Borg(object):
     """Singletons are a way of ensuring we have shared state data for all objects
        This is another pattern of ensuring that - which not allows a 'singleton'

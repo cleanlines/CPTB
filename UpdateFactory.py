@@ -4,8 +4,8 @@
 # Author: FS Hand
 from FeatureServiceUpdateHelper import FeatureServiceUpdateHelper
 
-class UpdateFactory(object):
 
+class UpdateFactory(object):
     @staticmethod
     def factory(json_object):
         if "type" in json_object:
@@ -15,6 +15,3 @@ class UpdateFactory(object):
             assert 0, "Bad generator creation: " + obj_type
         else:
             raise Exception("Object has no type")
-
-
-

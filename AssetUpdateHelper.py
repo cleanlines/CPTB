@@ -4,14 +4,14 @@
 # Author: FS Hand
 
 from arcresthelper.orgtools import orgtools
-from UpdateFactory import  UpdateFactory
+from UpdateFactory import UpdateFactory
 from Base import Base
 from Decorator import Decorator
 
-class AssetUpdateHelper(Base):
 
+class AssetUpdateHelper(Base):
     def __init__(self):
-        super(AssetUpdateHelper,self).__init__()
+        super(AssetUpdateHelper, self).__init__()
 
     @Decorator.function_timer
     def execute_update_process(self):

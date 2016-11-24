@@ -5,6 +5,7 @@
 
 from abc import ABCMeta, abstractmethod
 
+
 class AbstractUpdateHelper(object):
     __metaclass__ = ABCMeta
 
@@ -13,5 +14,5 @@ class AbstractUpdateHelper(object):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_related_records(self,recs,relationship_id):
+    def get_related_records(self, recs, relationship_id):
         raise NotImplementedError()

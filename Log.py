@@ -52,6 +52,7 @@ class Log(object):
             return self._log_file
          return "Logging to console/memory"
 
+    # noinspection PyMethodMayBeStatic
     def close_log(self):
         log = logging.getLogger()
         x = list(log.handlers)
@@ -60,14 +61,14 @@ class Log(object):
                 log.removeHandler(i)
                 i.flush()
                 i.close()
-            except:
+            except Exception:
                 pass
 
     @property
     def file_as_string(self):
         a_str = None
-        with open(self.log_file,'r') as file:
-            a_str = file.read()
+        with open(self.log_file,'r') as log_file:
+            a_str = log_file.read()
         return a_str
 
     @property
@@ -88,6 +89,7 @@ class Log(object):
                 return err.message
         return ""
 
+    # noinspection PyMethodMayBeStatic
     def do_message(self,message_string,level="info"):
         """
         Write to log method (file or memory)
