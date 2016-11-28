@@ -16,3 +16,13 @@ class AbstractUpdateHelper(object):
     @abstractmethod
     def get_related_records(self, recs, relationship_id):
         raise NotImplementedError()
+
+
+    @abstractmethod
+    def update_features_asset_info(self):
+        raise NotImplementedError()
+
+
+    @abstractmethod
+    def update_areas_for_features(self):
+        raise NotImplementedError()

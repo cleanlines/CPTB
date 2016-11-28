@@ -18,3 +18,15 @@ class AssetUpdateHelper(Base):
         ot = orgtools(securityinfo=self._config.agolconfig)
         for item in ot.getGroupContent(self._config.assetgroupname):
             UpdateFactory.factory(item).update_features()
+
+    @Decorator.function_timer
+    def execute_update_features_process(self):
+        ot = orgtools(securityinfo=self._config.agolconfig)
+        for item in ot.getGroupContent(self._config.assetgroupname):
+            UpdateFactory.factory(item).update_features_asset_info()
+
+    @Decorator.function_timer
+    def execute_update_areas_process(self):
+        ot = orgtools(securityinfo=self._config.agolconfig)
+        for item in ot.getGroupContent(self._config.assetgroupname):
+            UpdateFactory.factory(item).update_areas_for_features()

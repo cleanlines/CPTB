@@ -8,3 +8,6 @@ from Config import Config
 class Base(object):
     def __init__(self):
         self._config = Config()
+
+
+

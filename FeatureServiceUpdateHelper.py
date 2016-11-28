@@ -17,6 +17,25 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
         print self._config.log
 
     @Decorator.function_timer
+    def update_areas_for_features(self):
+        token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
+        fs = FeatureService(url=self._json_object["url"], securityHandler=token.securityhandler, initialize=True)
+        for layer in fs.layers:
+            self._config.log.do_message('LAYER:' + layer.name, "debug")
+            self.update_features_for_area(layer)
+
+    @Decorator.function_timer
+    def update_features_asset_info(self):
+        token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
+        fs = FeatureService(url=self._json_object["url"], securityHandler=token.securityhandler, initialize=True)
+        for layer in fs.layers:
+            self._config.log.do_message('LAYER:' + layer.name, "debug")
+            self.process_features(layer)
+        for table in fs.tables:
+            self._config.log.do_message('TABLE:' + table.name, "debug")
+            self.process_features(table)
+
+    @Decorator.function_timer
     def update_features(self):
         # print self._json_object
         token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
@@ -24,10 +43,10 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
         for layer in fs.layers:
             self._config.log.do_message('LAYER:' + layer.name, "debug")
             self.process_features(layer)
-            # self.update_features_for_area(layer)
+            self.update_features_for_area(layer)
         for table in fs.tables:
             self._config.log.do_message('TABLE:' + table.name, "debug")
-            # self.process_features(table)
+            self.process_features(table)
 
     @Decorator.function_timer
     def process_features(self, layer):  # TODO: fix me!!

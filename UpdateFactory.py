@@ -3,6 +3,7 @@
 # Created: 14/11/2016 3:34 PM
 # Author: FS Hand
 from FeatureServiceUpdateHelper import FeatureServiceUpdateHelper
+from CPTBExcelChart import CPTBExcelChart
 
 
 class UpdateFactory(object):
@@ -15,3 +16,7 @@ class UpdateFactory(object):
             assert 0, "Bad generator creation: " + obj_type
         else:
             raise Exception("Object has no type")
+
+    @staticmethod
+    def reportfactory(json_object):
+        return CPTBExcelChart(json_object)
