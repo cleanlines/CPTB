@@ -12,6 +12,8 @@ from arcrest.agol.services import FeatureService
 import xlsxwriter
 from Utility import Utility
 import datetime
+from arcrest.manageorg import Administration
+from arcrest.manageorg import ItemParameter
 
 
 
@@ -19,10 +21,8 @@ class CPTBExcelChart(Base):
     def __init__(self,json_object):
         super(CPTBExcelChart, self).__init__()
         self._json_object = json_object
-        self.workbook = xlsxwriter.Workbook(Utility.some_filename()+".xlsx",{'default_date_format': 'dd/mm/yyyy hh:mm'})
+        self.workbook = xlsxwriter.Workbook(Utility.some_date_filename()+".xlsx",{'default_date_format': 'dd/mm/yyyy hh:mm'})
         print self.workbook.filename
-
-
 
 
     def __str__(self):
@@ -91,53 +91,21 @@ class CPTBExcelChart(Base):
 
 
     def _add_graphs(self,worksheet,row,features,geomtype):
-
-        data = [[1,2,3,4,5],
-                [2,4,6,8,10],
-                [3,6,9,12,15]] # same as pdf row data in cols
-
-        # worksheet.write_column('A'+str(row+2), data[0])
-        # worksheet.write_column('B'+str(row+2), data[1])
-        # worksheet.write_column('C'+str(row+2), data[2])
-        #
-        # chart.add_series({'values': '={0}!$A${1}:$A${2}'.format(worksheet.name,str(row+2),str(row+7))})
-        # chart.add_series({'values': '={0}!$B${1}:$B${2}'.format(worksheet.name,str(row+2),str(row+7))})
-        # chart.add_series({'values': '={0}!$C${1}:$C${2}'.format(worksheet.name,str(row+2),str(row+7))})
-
-
         #TODO: you can get the domain vals from the result object
-
         reports = {}
         report_labels = {} # think about this as different graphs will have different y axis label
-
-
+        cols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         for feature in features:
-            for a_report in self._config.reports["reportset"]:
-                print a_report
-                if a_report["Name"] not in reports.keys():
-                    reports[a_report["Name"]] = {}
-
-                graph_val = feature.get_value(a_report["One"][1])
-                if not graph_val:
-                    graph_val = "None"
-                else:
-                    graph_val = a_report["One"][0]+" "+str(graph_val)
-
-                if geomtype == "esriGeometryPoint" or geomtype == "esriGeometryMultipoint": # will we have multippoints?
-                    if graph_val not in  reports[a_report["Name"]].keys():
-                        reports[a_report["Name"]][graph_val] = 1
-                    else:
-                        reports[a_report["Name"]][graph_val] += 1
-                    reports[a_report["Name"]]["yaxis"] = "Count"
-                else:
-                    n = self._get_geometry_value(feature)(geomtype)
-                    if graph_val not in  reports[a_report["Name"]].keys():
-                        reports[a_report["Name"]][graph_val] = n
-                    else:
-                        reports[a_report["Name"]][graph_val] += n
+            # self._generate_condition_chart(feature,reports,report_labels,geomtype)
+            self._chart_by_geom_or_count("conditiongrades")(feature, reports, report_labels, geomtype)
+            self._generate_renewal_chart(feature, reports, report_labels)
+            self._chart_by_geom_or_count("assettype")(feature,reports,report_labels,geomtype)
+            self._chart_by_geom_or_count("materialtype")(feature, reports, report_labels, geomtype)
 
         print reports
         # we have all the raw data we need
+
+        current_col = 0
         for k,v in reports.items():
             print k # graph title
 
@@ -147,38 +115,122 @@ class CPTBExcelChart(Base):
                 sorted_vals += [v[sk]]
 
             data = [sorted_keys,sorted_vals] #TODO: build it dynmically
-            worksheet.write_column('A' + str(row + 2), data[0])
-            worksheet.write_column('B' + str(row + 2), data[1])
+            worksheet.write_column(cols[current_col] + str(row + 2), data[0])
+            worksheet.write_column(cols[current_col+1] + str(row + 2), data[1])
             chart = self.workbook.add_chart({'type': 'column'})
-            worksheet.insert_chart(row + 9, 1, chart)
+            worksheet.insert_chart(row + 9,current_col , chart)
 
-            chart.add_series({'values': '={0}!$B${1}:$B${2}'.format(worksheet.name, str(row + 2), str(row + 2 +len(sorted_keys))),
-                              'categories':'{0}!$A${1}:$A${2}'.format(worksheet.name, str(row + 2), str(row + 2 + len(sorted_keys))),
-                              'name':k})
+            chart.add_series({'values': '={0}!${1}${2}:${3}${4}'.format(worksheet.name, cols[current_col+1],str(row + 2),cols[current_col+1], str(row + 2 +len(sorted_keys))),
+                              'categories':'{0}!${1}${2}:${3}${4}'.format(worksheet.name,cols[current_col], str(row + 2),cols[current_col], str(row + 2 + len(sorted_keys))),
+                              'name':report_labels[k]["title"]})
 
-            chart.set_y_axis({"name":"Total " + str(self._geometry_column_name(geomtype)[0])}) # fix this bug see error
+            chart.set_y_axis({"name":report_labels[k]["yaxis"]})
+            current_col +=3
 
-        print 'whip'
-
-
-
+        print 'yeeha!'
 
 
+    def _chart_by_geom_or_count(self,lookup):
+        def _chart(feature,reports,report_labels,geomtype):
+            a_report = self._config.reports["reportset"][lookup]
+            report_labels[lookup] = {"title": self._config.reports["reportset"][lookup]["title"]}
+
+            if lookup not in reports.keys():
+                reports[lookup] = {}
+
+            graph_val = feature.get_value(a_report["one"][1])
+            if not graph_val:
+                graph_val = "None"
+            else:
+                graph_val = a_report["one"][0] + " " + str(graph_val)
+
+            if geomtype == "esriGeometryPoint" or geomtype == "esriGeometryMultipoint":  # will we have multippoints?
+                if graph_val not in reports[lookup].keys():
+                    reports[lookup][graph_val] = 1
+                else:
+                    reports[lookup][graph_val] += 1
+                report_labels[lookup]["yaxis"] = "Total Count"
+            else:
+                n = self._get_geometry_value(feature)(geomtype)
+                if graph_val not in reports[lookup].keys():
+                    reports[lookup][graph_val] = n
+                else:
+                    reports[lookup][graph_val] += n
+                report_labels[lookup]["yaxis"] = "Total " + str(self._geometry_column_name(geomtype)[0])
+        return _chart
 
 
+    def _generate_condition_chart(self,feature,reports,report_labels,geomtype):
+        a_report = self._config.reports["reportset"]["conditiongrades"]
+        report_labels["conditiongrades"] = {"title":self._config.reports["reportset"]["conditiongrades"]["title"]}
 
-        #
+        if "conditiongrades" not in reports.keys():
+            reports["conditiongrades"] = {}
+
+        graph_val = feature.get_value(a_report["one"][1])
+        if not graph_val:
+            graph_val = "None"
+        else:
+            graph_val = a_report["one"][0] + " " + str(graph_val)
+
+        if geomtype == "esriGeometryPoint" or geomtype == "esriGeometryMultipoint":  # will we have multippoints?
+            if graph_val not in reports["conditiongrades"].keys():
+                reports["conditiongrades"][graph_val] = 1
+            else:
+                reports["conditiongrades"][graph_val] += 1
+            report_labels["conditiongrades"]["yaxis"] = "Total Count"
+        else:
+            n = self._get_geometry_value(feature)(geomtype)
+            if graph_val not in reports["conditiongrades"].keys():
+                reports["conditiongrades"][graph_val] = n
+            else:
+                reports["conditiongrades"][graph_val] += n
+            report_labels["conditiongrades"]["yaxis"] = "Total " +str(self._geometry_column_name(geomtype)[0])
 
 
+    def _generate_renewal_chart(self,feature, reports, report_labels):
+        a_report = self._config.reports["reportset"]["totalrenewals"]
+        report_labels["totalrenewals"] = {"yaxis":"Total Cost","title":self._config.reports["reportset"]["totalrenewals"]["title"]}
+        if "totalrenewals" not in reports.keys():
+            reports["totalrenewals"] = {}
+        graph_val = feature.get_value(a_report["one"])
+        if not graph_val:
+            yr = "None"
+        else:
+            # make a date from the milliseconds and get the year part
+            yr = self._return_date_value(graph_val).year
 
+        cost  = feature.get_value(a_report["two"])
+        if not cost:
+            cost = 0
 
-        # Insert the chart into the worksheet.
-
-        #["renewal_year","count"],
+        if yr not in reports["totalrenewals"].keys():
+            reports["totalrenewals"][yr] = cost
+        else:
+            reports["totalrenewals"][yr] += cost
 
 
     def _upload_to_arcgis_online(self):
-        pass #TODO: implement me
+
+        token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
+        admin = Administration(self._config.agolconfig["org_url"], token.securityhandler)
+        #   Access the content properties to add the item
+        #
+        content = admin.content
+        #   Access the user to add the item to
+        #
+        user = content.users.user()  # gets the logged in user.
+        #   Provide the item parameters
+        #
+
+        itemParams = ItemParameter()
+        itemParams.title = "XLSX Report" +Utility.get_file_name(self.workbook.filename)
+        itemParams.type = "Microsoft Excel"
+        itemParams.tags = "XLSX,Report"
+        #   Add the item
+        #
+        print (user.addItem(filePath=self.workbook.filename,
+                            itemParameters=itemParams))
 
 
     def _geometry_column_name(self,geometry_type):

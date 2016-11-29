@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import glob
 import time
+from datetime import datetime
 
 class Utility(object):
 
@@ -32,6 +33,11 @@ class Utility(object):
         return os.path.join(os.getenv('TEMP'), str(uuid.uuid4()).replace('-', ''))
 
     @staticmethod
+    def some_date_filename():
+        return os.path.join(os.getenv('TEMP'), datetime.today().strftime('%Y%m%d%H%M%S')
+)
+
+    @staticmethod
     def some_unique_string():
         return str(uuid.uuid4()).replace('-', '')
 
@@ -45,16 +51,6 @@ class Utility(object):
             file_name = os.path.split(src_file)[1]
             shutil.copy(src_file,os.path.join(dest_dir,file_name))
             return file_name
-        except:
-            raise
-
-    @staticmethod
-    def jpg_a_pdf(a_file,an_exe,out_loc):
-        try:
-            if not os.path.exists(out_loc): os.mkdir(out_loc)
-            cmd = "{0} -ip {1} -ol {2}".format(an_exe, a_file, out_loc)
-            subprocess.call(cmd, shell=False)
-            return [f for f in glob.glob(out_loc+"/"+os.path.splitext(os.path.split(a_file)[1])[0]+"*.jpg")]
         except:
             raise
 

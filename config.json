@@ -15,13 +15,33 @@
       "OBJECTID",
       "GLOBALID"
     ],
-    "reportset": [
+    "reportset": {
+      "conditiongrades": {
+        "one": [
+          "Grade",
+          "Latest_Condition_Grade"
+        ],
+        "title":"Condition Grades"
+      },
+      "assettype":{
+        "one":["","Type"],
+        "title":"By Asset Type"
+      },
+      "materialtype":{
+        "one":["","Material"],
+        "title":"By Material Type"
+      },
 
-        {"Name":"Condition Grades",
-        "One":["Grade","Latest_Condition_Grade"]
-        }
+      "totalrenewals": {
+        "one":
+          "Estimated_Renewal_Date",
+        "two":
+          "Replacement_Cost",
+        "yaxis": "Cost",
+        "title":"Total Renewals ($)"
 
-    ]
+      }
+    }
   },
   "esrifinishcodes": [
     "esriJobSucceeded",
