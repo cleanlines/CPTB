@@ -10,6 +10,7 @@
     "security_type": "Portal"
   },
   "reports": {
+    "reportfolder":"Replorts",
     "sortfield": "Latest_Condition_Grade",
     "skipfields": [
       "OBJECTID",

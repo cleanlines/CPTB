@@ -14,23 +14,21 @@ from Utility import Utility
 import datetime
 from arcrest.manageorg import Administration
 from arcrest.manageorg import ItemParameter
-
+from arcrestpatches import PatchedUser
 
 
 class CPTBExcelChart(Base):
     def __init__(self,json_object):
         super(CPTBExcelChart, self).__init__()
         self._json_object = json_object
-        self.workbook = xlsxwriter.Workbook(Utility.some_date_filename()+".xlsx",{'default_date_format': 'dd/mm/yyyy hh:mm'})
-        print self.workbook.filename
-
+        self.workbook = xlsxwriter.Workbook("{0}_{1}.xlsx".format(Utility.some_date_filename(),json_object["name"]),{'default_date_format': 'dd/mm/yyyy hh:mm'})
 
     def __str__(self):
-        return "chart object"
+        return self.workbook.filename
         # return "Server Admin Url:{0}, Sever has token:{1}".format(self._server_rest, str(self.__token is not None))
 
     def __rep__(self):
-        return "chart object"
+        return self.workbook.filename
         # return "Server Admin Url:{0}, Sever has token:{1}".format(self._server_rest, str(self.__token is not None))
 
     def __enter__(self):
@@ -43,7 +41,6 @@ class CPTBExcelChart(Base):
         except:
             pass
         # cleanup if required
-
 
     def do_reporting(self):
         self._create_report_for_service()
@@ -85,13 +82,13 @@ class CPTBExcelChart(Base):
             # add in the geom
             write_fd_val = self._write_value_function("esriFieldTypeDouble") # use the result geom type for consistency
             write_fd_val(worksheet, row_number, col_number,self._get_geometry_value(feature)(result.geometryType))
-            # worksheet.write_row(row_number,0,row_data)
             row_number +=1
         self._add_graphs(worksheet,row_number,sorted_features,result.geometryType)
 
 
     def _add_graphs(self,worksheet,row,features,geomtype):
         #TODO: you can get the domain vals from the result object
+        # TODO: columns past z - get the division to see which one we are AA, AB etc then the modulus for the actual column like AC etc then +1 on the second for the second column
         reports = {}
         report_labels = {} # think about this as different graphs will have different y axis label
         cols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -102,23 +99,19 @@ class CPTBExcelChart(Base):
             self._chart_by_geom_or_count("assettype")(feature,reports,report_labels,geomtype)
             self._chart_by_geom_or_count("materialtype")(feature, reports, report_labels, geomtype)
 
-        print reports
-        # we have all the raw data we need
-
-        current_col = 0
+        current_col = 1
+        insert_chart_col = 1
         for k,v in reports.items():
-            print k # graph title
-
             sorted_keys = sorted(v.keys())
             sorted_vals = []
             for sk in sorted_keys:
                 sorted_vals += [v[sk]]
 
-            data = [sorted_keys,sorted_vals] #TODO: build it dynmically
+            data = [sorted_keys,sorted_vals]
             worksheet.write_column(cols[current_col] + str(row + 2), data[0])
             worksheet.write_column(cols[current_col+1] + str(row + 2), data[1])
             chart = self.workbook.add_chart({'type': 'column'})
-            worksheet.insert_chart(row + 9,current_col , chart)
+            worksheet.insert_chart(row + 9,insert_chart_col , chart)
 
             chart.add_series({'values': '={0}!${1}${2}:${3}${4}'.format(worksheet.name, cols[current_col+1],str(row + 2),cols[current_col+1], str(row + 2 +len(sorted_keys))),
                               'categories':'{0}!${1}${2}:${3}${4}'.format(worksheet.name,cols[current_col], str(row + 2),cols[current_col], str(row + 2 + len(sorted_keys))),
@@ -126,9 +119,7 @@ class CPTBExcelChart(Base):
 
             chart.set_y_axis({"name":report_labels[k]["yaxis"]})
             current_col +=3
-
-        print 'yeeha!'
-
+            insert_chart_col += 9
 
     def _chart_by_geom_or_count(self,lookup):
         def _chart(feature,reports,report_labels,geomtype):
@@ -159,7 +150,6 @@ class CPTBExcelChart(Base):
                 report_labels[lookup]["yaxis"] = "Total " + str(self._geometry_column_name(geomtype)[0])
         return _chart
 
-
     def _generate_condition_chart(self,feature,reports,report_labels,geomtype):
         a_report = self._config.reports["reportset"]["conditiongrades"]
         report_labels["conditiongrades"] = {"title":self._config.reports["reportset"]["conditiongrades"]["title"]}
@@ -187,7 +177,6 @@ class CPTBExcelChart(Base):
                 reports["conditiongrades"][graph_val] += n
             report_labels["conditiongrades"]["yaxis"] = "Total " +str(self._geometry_column_name(geomtype)[0])
 
-
     def _generate_renewal_chart(self,feature, reports, report_labels):
         a_report = self._config.reports["reportset"]["totalrenewals"]
         report_labels["totalrenewals"] = {"yaxis":"Total Cost","title":self._config.reports["reportset"]["totalrenewals"]["title"]}
@@ -197,7 +186,6 @@ class CPTBExcelChart(Base):
         if not graph_val:
             yr = "None"
         else:
-            # make a date from the milliseconds and get the year part
             yr = self._return_date_value(graph_val).year
 
         cost  = feature.get_value(a_report["two"])
@@ -209,29 +197,24 @@ class CPTBExcelChart(Base):
         else:
             reports["totalrenewals"][yr] += cost
 
-
     def _upload_to_arcgis_online(self):
-
         token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
         admin = Administration(self._config.agolconfig["org_url"], token.securityhandler)
-        #   Access the content properties to add the item
-        #
         content = admin.content
-        #   Access the user to add the item to
-        #
-        user = content.users.user()  # gets the logged in user.
-        #   Provide the item parameters
-        #
+        user = content.users.user()
+        patchedUser = PatchedUser(url=user.root, securityHandler= token.securityhandler,initalize=True)
+        item_params = ItemParameter()
+        item_params.title = "XLSX Report" +Utility.get_file_name(self.workbook.filename)
+        item_params.type = "Microsoft Excel"
+        item_params.tags = "XLSX,Report"
 
-        itemParams = ItemParameter()
-        itemParams.title = "XLSX Report" +Utility.get_file_name(self.workbook.filename)
-        itemParams.type = "Microsoft Excel"
-        itemParams.tags = "XLSX,Report"
-        #   Add the item
-        #
-        print (user.addItem(filePath=self.workbook.filename,
-                            itemParameters=itemParams))
+        possible_folder = [f["id"]for f in user.folders if f["title"] == self._config.reports["reportfolder"]]
+        if possible_folder:
+            folder = possible_folder[0]
+        else:
+            folder = None
 
+        patchedUser.patchedAddItem(filePath=self.workbook.filename, itemParameters=item_params,folder=folder)
 
     def _geometry_column_name(self,geometry_type):
         vals = {"esriGeometryPoint":[],
