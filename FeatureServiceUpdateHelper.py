@@ -170,4 +170,4 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
                     self._config.log.do_message(ke.message + "key not on this related table - skip", "info")
                 except Exception as e:
                     self._config.log.do_message(e.message, "error")
-            return result
+        return result
