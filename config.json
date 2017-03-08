@@ -63,6 +63,7 @@
       "fieldlookups": {
         "Scheduled_Maintenance_Date": "Next_Maintenance_Date",
         "Scheduled_Maintenance_Descripti": "Next_Maintenance_Description"
+		"Scheduled_Maintenance_Priority": "Next_Maintenance_Priority"
       },
       "where": [
         "Completed_Maintenance_Date",
