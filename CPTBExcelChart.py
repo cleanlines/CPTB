@@ -44,7 +44,7 @@ class CPTBExcelChart(Base):
 
     def do_reporting(self):
         self._create_report_for_service()
-        self._upload_to_arcgis_online()
+        #self._upload_to_arcgis_online()
 
     def _create_report_for_service(self):
         try:
@@ -113,8 +113,8 @@ class CPTBExcelChart(Base):
             chart = self.workbook.add_chart({'type': 'column'})
             worksheet.insert_chart(row + 9,insert_chart_col , chart)
 
-            chart.add_series({'values': '={0}!${1}${2}:${3}${4}'.format(worksheet.name, cols[current_col+1],str(row + 2),cols[current_col+1], str(row + 2 +len(sorted_keys))),
-                              'categories':'{0}!${1}${2}:${3}${4}'.format(worksheet.name,cols[current_col], str(row + 2),cols[current_col], str(row + 2 + len(sorted_keys))),
+            chart.add_series({'values': "='{0}'!${1}${2}:${3}${4}".format(worksheet.name, cols[current_col+1],str(row + 2),cols[current_col+1], str(row + 1 +len(sorted_keys))),
+                              'categories':"'{0}'!${1}${2}:${3}${4}".format(worksheet.name,cols[current_col], str(row + 2),cols[current_col], str(row + 1 + len(sorted_keys))),
                               'name':report_labels[k]["title"]})
 
             chart.set_y_axis({"name":report_labels[k]["yaxis"]})
