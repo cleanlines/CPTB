@@ -44,7 +44,7 @@ class CPTBExcelChart(Base):
 
     def do_reporting(self):
         self._create_report_for_service()
-        self._upload_to_arcgis_online() #make a change
+        self._upload_to_arcgis_online()
 
     def _create_report_for_service(self):
         try:
