@@ -2,13 +2,14 @@
 # File: AreaUpdateHelper.py
 # Created: 14/11/2016 3:30 PM
 # Author: FS Hand
-from Base import Base
-from arcresthelper import securityhandlerhelper
-from arcrest.agol.services import FeatureLayer
-from arcrest.agol.helperservices.analysis import analysis
-# noinspection PyProtectedMember
-from arcrest.ags._gpobjects import GPString
 from time import sleep
+
+from arcrest.agol.helperservices.analysis import analysis
+from arcrest.agol.services import FeatureLayer
+from arcrest.ags._gpobjects import GPString
+from arcresthelper import securityhandlerhelper
+
+from Base import Base
 from Decorator import Decorator
 
 
