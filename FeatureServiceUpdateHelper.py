@@ -75,8 +75,9 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
         try:
             if some_feats:
                 layer.updateFeature(features=some_feats)
-            if self._update_current_value(features):
-                layer.updateFeature(features=features)
+            # don't update the current value.
+            # if self._update_current_value(features):
+            #     layer.updateFeature(features=features)
 
         except Exception as e:
             self._config.log.do_message(e.message, "error")
