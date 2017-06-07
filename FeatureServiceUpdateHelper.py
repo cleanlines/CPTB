@@ -2,7 +2,6 @@
 # File: FeatureServiceUpdateHelper.py
 # Created: 14/11/2016 3:33 PM
 # Author: FS Hand
-#
 
 from AbstractUpdateHelper import AbstractUpdateHelper
 from arcresthelper import securityhandlerhelper
