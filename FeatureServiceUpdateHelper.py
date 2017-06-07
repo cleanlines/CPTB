@@ -2,6 +2,7 @@
 # File: FeatureServiceUpdateHelper.py
 # Created: 14/11/2016 3:33 PM
 # Author: FS Hand
+
 from AbstractUpdateHelper import AbstractUpdateHelper
 from arcresthelper import securityhandlerhelper
 from arcrest.agol.services import FeatureService
@@ -49,7 +50,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
             self.process_features(table)
 
     @Decorator.function_timer
-    def process_features(self, layer):  # TODO: fix me!!
+    def process_features(self, layer):
         fields = 'OBJECTID,' + ",".join(
             self._config.related_fields["condition"]["fieldlookups"].values()) + "," + ",".join(
             self._config.related_fields["maintenance"]["fieldlookups"].values()) + "," + ",".join(
@@ -73,9 +74,11 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
                 self._config.log.do_message(e.message, "error")
 
         try:
-            layer.updateFeature(features=some_feats)
-            if self._update_current_value(features):
-                layer.updateFeature(features=features)
+            if some_feats:
+                layer.updateFeature(features=some_feats)
+            # don't update the current value.
+            # if self._update_current_value(features):
+            #     layer.updateFeature(features=features)
 
         except Exception as e:
             self._config.log.do_message(e.message, "error")
@@ -90,6 +93,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
                 return False
 
         return_val = False
+        updated_features = []
         for f in features.features:
             # this is well known stuff - we need the following bits of info
             d1 = f.get_value(self._config.valuation_field_lookups["installdate"])
@@ -107,7 +111,11 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
             if current_cost < 0:
                 current_cost = 0
             f.set_value(self._config.valuation_field_lookups["currentvalue"], current_cost)
+            updated_features.append(f)
             return_val = True
+        if return_val:
+            del features.features[:]
+            [features.features.append(af) for af in updated_features]
         return return_val
 
     @Decorator.function_timer

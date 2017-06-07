@@ -2,13 +2,14 @@
 # File: AreaUpdateHelper.py
 # Created: 14/11/2016 3:30 PM
 # Author: FS Hand
-from Base import Base
-from arcresthelper import securityhandlerhelper
-from arcrest.agol.services import FeatureLayer
-from arcrest.agol.helperservices.analysis import analysis
-# noinspection PyProtectedMember
-from arcrest.ags._gpobjects import GPString
 from time import sleep
+
+from arcrest.agol.helperservices.analysis import analysis
+from arcrest.agol.services import FeatureLayer
+from arcrest.ags._gpobjects import GPString
+from arcresthelper import securityhandlerhelper
+
+from Base import Base
 from Decorator import Decorator
 
 
@@ -84,7 +85,8 @@ class AreaUpdateHelper(Base):
                 not_an_update.append(update_feature)
         # bit naughty here we are firing something down the exhaust plorts
         update_features._features = [f for f in update_features.features if f not in not_an_update]
-        layer.updateFeature(features=update_features)
+        if update_features._features:
+            layer.updateFeature(features=update_features)
 
     @Decorator.method_call_log
     def _perform_area_update(self, current_value, new_values):
