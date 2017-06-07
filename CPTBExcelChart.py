@@ -3,7 +3,7 @@
 # Created: 25/11/2016 4:01 PM
 # Author: FS Hand
 
-# create excel charts then add to AGOL - yeah!
+# create excel charts then add to AGOL
 from xlsxwriter import workbook
 
 from Base import Base
@@ -22,6 +22,7 @@ class CPTBExcelChart(Base):
         super(CPTBExcelChart, self).__init__()
         self._json_object = json_object
         self.workbook = xlsxwriter.Workbook("{0}_{1}.xlsx".format(Utility.some_date_filename(),json_object["name"]),{'default_date_format': 'dd/mm/yyyy hh:mm'})
+        self._domain_lookup = {}
 
     def __str__(self):
         return self.workbook.filename
@@ -51,7 +52,13 @@ class CPTBExcelChart(Base):
             token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
             fs = FeatureService(url=self._json_object["url"], securityHandler=token.securityhandler, initialize=True)
             # get some config lookup for a particular layer
+
             for layer in fs.layers:
+                self._domain_lookup[layer.name] = {}
+                for f in layer.fields:
+                    if f["domain"] is not None:
+                        self._domain_lookup[layer.name][f["name"]] = f["domain"]
+
                 result = layer.query(out_fields="*", resultType='standard',returnGeometry=True)
                 self._process_features(result,layer.name)
         except Exception as e:
@@ -99,6 +106,7 @@ class CPTBExcelChart(Base):
             self._chart_by_geom_or_count("assettype")(feature,reports,report_labels,geomtype)
             self._chart_by_geom_or_count("materialtype")(feature, reports, report_labels, geomtype)
 
+        self._add_no_count_domain_values(worksheet.name,reports)
         current_col = 1
         insert_chart_col = 1
         for k,v in reports.items():
@@ -120,6 +128,25 @@ class CPTBExcelChart(Base):
             chart.set_y_axis({"name":report_labels[k]["yaxis"]})
             current_col +=3
             insert_chart_col += 9
+
+    def _add_no_count_domain_values(self,name,reports):
+        try:
+            domains = self._domain_lookup[name]
+            if domains:
+                for k,v in reports.items():
+                    a_report = reports[k]
+                    fd = self._config.reports["reportset"][k]
+                    if not isinstance(fd["one"], basestring):
+                        if fd["one"][1] in domains:
+                            this_domain = domains[fd["one"][1]]
+                            for coded_vals in this_domain['codedValues']:
+                                graph_val = fd["one"][0] + " " + str(coded_vals['code'])
+                                print graph_val," ",a_report
+                                if graph_val not in a_report:
+                                    a_report[graph_val.strip()] = 0
+                            sorted(a_report)
+        except Exception as e:
+            print e.message
 
     def _chart_by_geom_or_count(self,lookup):
         def _chart(feature,reports,report_labels,geomtype):
