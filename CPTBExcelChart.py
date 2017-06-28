@@ -15,6 +15,7 @@ import datetime
 from arcrest.manageorg import Administration
 from arcrest.manageorg import ItemParameter
 from arcrestpatches import PatchedUser
+import string
 
 
 class CPTBExcelChart(Base):
@@ -69,6 +70,8 @@ class CPTBExcelChart(Base):
     def _process_features(self,result,name):
         worksheet =  self.workbook.add_worksheet(name)
         bold = self.workbook.add_format({'bold': 1})
+        self._config.log.do_message(str(result.fields),"info")
+        if not result.features: return
         headings = [fd["alias"] for fd in result.fields if fd["name"].upper() not in self._config.reports["skipfields"]]+self._geometry_column_name(result.geometryType)
         worksheet.write_row('A1',headings,bold)
         row_number = 1
@@ -263,7 +266,15 @@ class CPTBExcelChart(Base):
 
     def _write_value_function(self, type):
         def _write_value(workbook,row,col,some_value):
-            self._config.log.do_message("Value:"+str(some_value),"info")
+            try:
+                self._config.log.do_message("Value:"+str(some_value),"info")
+            except Exception as e:
+                self._config.log.do_message(e.message,"error")
+                self._config.log.do_message("Value:" + some_value.encode('utf-8') + " - GOOD", "info")
+                printable = set(string.printable)
+                filter(lambda x: x in printable, some_value)
+                self._config.log.do_message("Updated: "+ some_value, "info")
+
             write_row_value = {"esriFieldTypeOID": lambda: workbook.write_number(row,col,some_value),
                                    "esriFieldTypeGlobalID": lambda:workbook.write_string(row,col,some_value),
                                    "esriFieldTypeString": lambda:workbook.write_string(row,col,some_value),
