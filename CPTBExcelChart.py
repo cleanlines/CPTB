@@ -15,8 +15,17 @@ import datetime
 from arcrest.manageorg import Administration
 from arcrest.manageorg import ItemParameter
 from arcrestpatches import PatchedUser
+import urllib
+import requests
+import json
 import string
 
+try:
+    import arcpy
+    arcpyFound = True
+except:
+    arcpyFound = False
+# DEBUG arcpyFound = False
 
 class CPTBExcelChart(Base):
     def __init__(self,json_object):
@@ -257,12 +266,49 @@ class CPTBExcelChart(Base):
     def _get_geometry_value(self,feature):
         def _get_geom(geom_type):
             vals = {"esriGeometryPoint": lambda: None,
-                    "esriGeometryMultipoint": lambda: None,
-                    "esriGeometryPolyline": lambda: feature.geometry.length,
-                    "esriGeometryPolygon": lambda: feature.geometry.area,
-                    "esriGeometryEnvelope": lambda: feature.geometry.area}
+                    "esriGeometryMultipoint": lambda: None}
+            if arcpyFound:
+                vals["esriGeometryPolygon"] = lambda: feature.geometry.area
+                vals["esriGeometryEnvelope"] = lambda: feature.geometry.area
+                vals["esriGeometryPolyline"]=  lambda: feature.geometry.length
+            else:
+                vals["esriGeometryPolyline"] = lambda: CPTBExcelChart.get_lengths(feature.get_value("SHAPE"),self._config.geometryservicepolyline)
+                vals["esriGeometryPolygon"] = lambda : CPTBExcelChart.get_areas_and_lengths(feature.get_value("SHAPE"),self._config.geometryservicepolygon)
+                vals["esriGeometryEnvelope"] = lambda: CPTBExcelChart.get_areas_and_lengths(feature.get_value("SHAPE"),self._config.geometryservicepolygon)
+
             return vals[geom_type]()
         return _get_geom
+
+    @classmethod
+    def get_areas_and_lengths(cls,shape_feature,url):
+        area = 0.0
+        try:
+            params = {'f':'json','calculationType':'planar','sr':shape_feature['spatialReference']['wkid'],'polygons':[{'rings':shape_feature['rings']}]}
+            query_string = urllib.urlencode(params)
+            r = requests.get(url, params=query_string)
+            some_json = json.loads(r.text)
+            if "areas" in some_json:
+                for val in some_json["areas"]:
+                    area += val
+        except Exception as e:
+            Base()._config.log.do_message(e.message, "error")
+        return round(area,3)
+
+    @classmethod
+    def get_lengths(cls,shape_feature,url):
+        length = 0.0
+        try:
+            params = {'f': 'json', 'calculationType': 'preserveShape', 'sr': shape_feature['spatialReference']['wkid'],
+                      'polylines': [{'paths': shape_feature['paths']}]}
+            query_string = urllib.urlencode(params)
+            r = requests.get(url, params=query_string)
+            some_json = json.loads(r.text)
+            if "lengths" in some_json:
+                for val in some_json["lengths"]:
+                    length += val
+        except Exception as e:
+            Base()._config.log.do_message(e.message, "error")
+        return round(length,3)
 
     def _write_value_function(self, type):
         def _write_value(workbook,row,col,some_value):
