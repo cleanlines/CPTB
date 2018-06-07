@@ -75,12 +75,6 @@ class Config(Borg):
     #         self.log.close_log()
 
     # noinspection PyDefaultArgument
-    def config_has_attribute(self, atts=[], obj=None):
-        if not atts:
-            return True
+    def config_has_attribute(self, att, obj=None):
         obj = self if not obj else obj
-        for an_att in atts:
-            if an_att in obj:
-                return True + self.config_has_attribute()
-            else:
-                return False
+        return hasattr(obj,att)

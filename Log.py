@@ -96,6 +96,7 @@ class Log(object):
         params: level: level to write (default info) - one of:
                        critical,error,warn,info,debug
         """
+        print message_string
         if level == "critical":
             logging.critical(message_string)
         elif level == "error" or level == "err":
@@ -109,5 +110,3 @@ class Log(object):
             logging.info(message_string)
         elif level == "debug":
             logging.debug(message_string)
-        else:
-            print message_string

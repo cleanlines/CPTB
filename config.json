@@ -6,10 +6,18 @@
   "geometryservicepolygon":"http://tasks.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer/areasAndLengths",
   "geometryservicepolyline":"http://tasks.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer/lengths",
   "agolconfig": {
-    "org_url": "https://cptb.maps.arcgis.com",
-    "username": "m.llewellyn",
-    "password": "cptb1234",
+    "org_url": "https://svcs-eaglegis.maps.arcgis.com",
+    "username": "fraserhandeagle",
+    "password": "snow1nz",
     "security_type": "Portal"
+  },
+  "newschema":{
+    "tag":"automation2",
+    "fields": {
+      "maintenance":["MAINT_REVIEW_DATE","MAINT_PERSONNEL","MAINT_NO_FORESEEABLE","MAINT_DEADWOOD","MAINT_GEN_PRUNE","MAINT_FORM_PRUNE","MAINT_EXTEND_MULCH","MAINT_CROWN_CLEAN","MAINT_CROWN_LIFT","MAINT_REDUCE_WEIGHT","MAINT_REMOVAL","MAINT_STUMP_GRIND","MAINT_OTHER","MAINT_PRIORTY","MAINT_SECOND_OPINION","MAINT_YEAR","MAINT_CONSENT_REQ","MAINT_CONSENT_GRANTED","MAINT_COMMENTS"],
+      "fd_sort":["last_edited_date","_REVIEW_DATE"],
+      "qtra":["QTRA_REVIEW_DATE","QTRA_REVIEW_PERSONNEL","QTRA_PROB_FAILURE","QTRA_ANNUAL_RISK","QTRA_COMMENTS","SURVEY_CYCLE","QTRA_SECOND_OPINION","QTRA_ACTION_REQUIRED","QTRA_COUNCIL_REPORTING"]
+    }
   },
   "reports": {
     "reportfolder":"Reports",
@@ -54,7 +62,6 @@
   ],
   "assetgroup": "417e33a9cb434af38abc4b174849089f",
   "assetgroupname": "Asset Automation",
-  "treegroupname":"",
   "areaupdate": {
     "areaservice": "https://services6.arcgis.com/sNkVulJvjhuLzi0I/ArcGIS/rest/services/Area_Name_Simple/FeatureServer/0",
     "queryfield": "AreaName",

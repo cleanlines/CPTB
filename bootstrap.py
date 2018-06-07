@@ -15,7 +15,6 @@
 
 from AssetUpdateHelper import AssetUpdateHelper
 
-
 def main():
     AssetUpdateHelper().execute_update_process()
 
