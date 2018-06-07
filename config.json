@@ -7,8 +7,8 @@
   "geometryservicepolyline":"http://tasks.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer/lengths",
   "agolconfig": {
     "org_url": "https://svcs-eaglegis.maps.arcgis.com",
-    "username": "fraserhandeagle",
-    "password": "snow1nz",
+    "username": "xxxxxxxx",
+    "password": "xxxxxxxx",
     "security_type": "Portal"
   },
   "newschema":{
