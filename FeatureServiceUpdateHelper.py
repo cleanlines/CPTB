@@ -18,6 +18,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
         print self._config.log
 
     @Decorator.function_timer
+    @Decorator.method_call_log
     def update_areas_for_features(self):
         token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
         fs = FeatureService(url=self._json_object["url"], securityHandler=token.securityhandler, initialize=True)
@@ -26,6 +27,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
             self.update_features_for_area(layer)
 
     @Decorator.function_timer
+    @Decorator.method_call_log
     def update_features_asset_info(self):
         token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
         fs = FeatureService(url=self._json_object["url"], securityHandler=token.securityhandler, initialize=True)
@@ -37,6 +39,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
             self.process_features(table)
 
     @Decorator.function_timer
+    @Decorator.method_call_log
     def update_features(self):
         # print self._json_object
         token = securityhandlerhelper.securityhandlerhelper(self._config.agolconfig)
@@ -50,36 +53,50 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
             self.process_features(table)
 
     @Decorator.function_timer
+    @Decorator.method_call_log
     def process_features(self, layer):
         fields = 'OBJECTID,' + ",".join(
             self._config.related_fields["condition"]["fieldlookups"].values()) + "," + ",".join(
             self._config.related_fields["maintenance"]["fieldlookups"].values()) + "," + ",".join(
             self._config.valuation_field_lookups.values())
-        features = layer.query(out_fields=fields, resultType='standard')  # we are here sorting out the field
-        # print [feat.get_value("OBJECTID") for feat in features.features]
-        feat_ids = ",".join([str(feat.get_value("OBJECTID")) for feat in features.features])
-        # print feat_ids
-        some_updates = {}
-        # note we only want to process origin relationships (otherwise we end up doing backwards ones - wont find anything but still
-        [some_updates[k].update(v) if k in some_updates else some_updates.update({k: v}) for w in
-         [self.get_related_records(layer.query_related_records(feat_ids, r["id"]), r["id"]) for r in layer.relationships
-          if r["role"] == 'esriRelRoleOrigin'] for k, v in w.items()]
-        # print some_updates
-        some_feats = filter(lambda some_feat: some_feat.get_value('OBJECTID') in some_updates.keys(), features.features)
-        for a_feat in some_feats:
+        self._process_features(layer,fields)
+
+    def _process_features(self, layer, fields):
+        try:
+            features = layer.query(out_fields=fields, resultType='standard')  # we are here sorting out the field
+            # print [feat.get_value("OBJECTID") for feat in features.features]
+            feat_ids = ",".join([str(feat.get_value("OBJECTID")) for feat in features.features])
+            # print feat_ids
+            some_updates = {}
+            # note we only want to process origin relationships (otherwise we end up doing backwards ones - wont find anything but still
+            [some_updates[k].update(v) if k in some_updates else some_updates.update({k: v}) for w in
+             [self.get_related_records(layer.query_related_records(feat_ids, r["id"]), r["id"]) for r in layer.relationships
+              if r["role"] == 'esriRelRoleOrigin'] for k, v in w.items()]
+            # print some_updates
+            some_feats = filter(lambda some_feat: some_feat.get_value('OBJECTID') in some_updates.keys(), features.features)
+            for a_feat in some_feats:
+                try:
+                    for k, v in some_updates[a_feat.get_value('OBJECTID')].items():
+                        a_feat.set_value(k, v)
+                except Exception as e:
+                    self._config.log.do_message(e.message, "error")
+
             try:
-                for k, v in some_updates[a_feat.get_value('OBJECTID')].items():
-                    a_feat.set_value(k, v)
+                if some_feats:
+                    if len(some_feats) <= 100:
+                        chunks = [some_feats]
+                    else:
+                        chunks = [list(some_feats[i:i + 100]) for i in range(0, len(some_feats), 100)]
+                        self._config.log.do_message("Chunking data into 100 record chuncks - {} chunks".format(len(chunks)),"debug")
+                for a_chunk in chunks:
+                    self._config.log.do_message("Processing chunk","debug")
+                    result = layer.updateFeature(features=a_chunk)
+                    self._config.log.do_message(str(result),"debug")
+                # don't update the current value.
+                # if self._update_current_value(features):
+                #     layer.updateFeature(features=features)
             except Exception as e:
                 self._config.log.do_message(e.message, "error")
-
-        try:
-            if some_feats:
-                layer.updateFeature(features=some_feats)
-            # don't update the current value.
-            # if self._update_current_value(features):
-            #     layer.updateFeature(features=features)
-
         except Exception as e:
             self._config.log.do_message(e.message, "error")
 
@@ -121,6 +138,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
     @Decorator.function_timer
     def get_related_records(self, rec_list, relationship_id):
         # print relationship_id
+
         updates = {}
         if "relatedRecordGroups" in rec_list:
             if len(rec_list["relatedRecordGroups"]) > 0:
@@ -133,6 +151,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
         return updates
 
     @Decorator.function_timer
+    @Decorator.method_call_log
     def _process_related_record_group(self, group):
         skips = ["OBJECTID", "SHAPE", "GLOBALID"]
         result = {}
@@ -148,7 +167,7 @@ class FeatureServiceUpdateHelper(AbstractUpdateHelper, AreaUpdateHelper):
                     item = sorted_items[0]
                     # we could have got sorted_items[-1] but if there is a where then we need a consistent loop
                     # not done yet - even though we have an item we need to check if there is any other processing to do
-                    # if nothing satifies the where then set these fields to null
+                    # if nothing satisfies the where then set these fields to null
                     if "where" in self._config.related_fields[updatekey]:
                         for i in sorted_items:
                             if i['attributes'][self._config.related_fields[updatekey]["where"][0]] == \
